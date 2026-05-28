@@ -98,7 +98,10 @@ root_cause_analyzer = Agent(
     description="Analyze the information provided and determine with high accuracy the root cause of an issue.",
     instruction="""
     INSTRUCTIONS:
-    Your goal is to analyze the issue gathered by RESEARCH: { RESEARCH? } and determine the most likely root cause of the issue. You should use your expertise in SRE and incident analysis to make connections between the different pieces of information provided in the research and identify the underlying cause of the issue. Be as specific and detailed as possible in your analysis, and provide a clear explanation of how you arrived at your conclusion. If there are multiple potential root causes, analyze each one and determine which is most likely based on the evidence provided. Provide your findings into field ROOT_CAUSE 
+    Your goal is to analyze the issue gathered by RESEARCH: { RESEARCH? } and determine the most likely root cause of the issue. You should use your expertise in SRE and incident analysis to make connections between the different pieces of information provided in the research and identify the underlying cause of the issue. Be as specific and detailed as possible in your analysis, and provide a clear explanation of how you arrived at your conclusion. If there are multiple potential root causes, analyze each one and determine which is most likely based on the evidence provided. Provide your findings into field ROOT_CAUSE Guidance when determining root cause: 
+    Approoch to be undertaken here are:
+    1. Perform impact analysis. What is the possible impact
+    2. Suggeest workaround and proactive measures to prevent this in future. Focus more on proactive measures rather than reactive ones. 
 
     - If there is CRITICAL_FEEDBACK, use those thoughts to improve upon the outline.
     - A RESEARCH will be provided, please use details from it as much as possible.
@@ -122,8 +125,17 @@ root_cause_analyzer = Agent(
 researcher = Agent(
     name="researcher",
     model=model_name,
-    description="Based on the error try to determine the root and use the provided link to load a webpage in html and understand what the error   using the browser tool. You can also use the browser tool to load other relevant links to gather more information about the error. You will be an expert in interpreting html. Your goal is to travese to the link, gather as much information as possible about the error, in determining  root causes, and add findings  in to the state field 'research'.",
+    description="Conducts research to gather information about incidents and errors.",
     instruction="""
+    
+    Based on the error try to determine the root and use the provided link to load a webpage in html and understand what the error   using the browser tool. You can also use the browser tool to load other relevant links to gather more information about the error. You will be an expert in interpreting html. Your goal is to travese to the link, gather as much information as possible about the error, in determining  root causes, and add findings  in to the state field 'research'.
+
+    Approoch to be undertaken here are:
+    1. Identify the issue
+    2. Gather data and evidence
+    3. Analyze the data to identify possible causes
+    4. Revalidating the theory based on evidence gathered so far. For example. if an egg is broken and the cause is because basket fallen down. Then revalidating this theory by validating possibility that other eggs has broken too. This will help in impact analysis 
+
     USER_PROVIDED_ERROR:
     { USER_PROVIDED_ERROR? }
 
@@ -135,7 +147,7 @@ researcher = Agent(
 
     INSTRUCTIONS:
     - If there is CRITICAL_FEEDBACK, use those thoughts to improve upon your research.
-    - If there's a HTTP_LINK provided, use the browser tool to load the page and analyze its content to gather information about the error. Look for any clues in the page's text, structure, or metadata that could help you understand the error better.
+    - If there's a HTTP_LINK provided, use the browser tool to load the page and analyze its content to gather information about the error.
     - Review the error details and HTTP link provided. If you have not seen this issue before, use the browser tool and google the error message using google_search tool to find relevant information about the error and its potential root cause. Use the browser tool to load the HTTP link provided and analyze its content for clues about the error.
      You are an SRE expert and use the links available or feature of the observability tool to find out the root cause of the issue. Gather as much information as possible about the error and its potential root cause using browser_tool and add it to the state field 'research' using the 'append_to_state' tool.
     """,
@@ -143,7 +155,7 @@ researcher = Agent(
         temperature=0,
     ),
     tools=[
-        browser_tool,google_search,append_to_state,
+        browser_tool,google_search, append_to_state,
     ],
 )
 
