@@ -148,6 +148,8 @@ researcher = LlmAgent(
 
     INSTRUCTIONS:
     - If there is CRITICAL_FEEDBACK, use those thoughts to improve upon your research.
+    - If there's a HTTP_LINK provided, use the browser tool to load the page and analyze its content to gather information about the error. Look for any clues in the page's text, structure, or metadata that could help you understand the error better.
+    - Review the error details and HTTP link provided. If you have not seen this issue before, use the browser tool and google the error message using google_search tool to find relevant information about the error and its potential root cause. Use the browser tool to load the HTTP link provided and analyze its content for clues about the error.
     - If there's a HTTP_LINK provided, use the browser tool to load the page and analyze its content to gather information about the error.
     - Review the error details and HTTP link provided. If you have not seen this issue before, use the browser tool and google the error message to find relevant information about the error and its potential root cause. Use the browser tool to load the HTTP link provided and analyze its content for clues about the error.
      You are an SRE expert and use the links available or feature of the observability tool to find out the root cause of the issue. Gather as much information as possible about the error and its potential root cause using browser_tool and add it to the state field 'research' using the 'append_to_state' tool.
