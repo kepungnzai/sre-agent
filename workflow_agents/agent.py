@@ -8,9 +8,9 @@ import logging
 import google.cloud.logging
 from callback_logging import log_query_to_model, log_model_response
 from dotenv import load_dotenv
-from google.adk.tools import google_search
-from google.adk import Agent
-from google.adk.agents import SequentialAgent, LoopAgent, ParallelAgent
+from google.adk import Agent 
+from google.adk.tools.agent_tool import AgentTool
+from google.adk.agents import LlmAgent, SequentialAgent, LoopAgent, ParallelAgent
 from google.adk.tools.tool_context import ToolContext
 from google.adk.tools.langchain_tool import LangchainTool  # import
 from google.genai import types
@@ -19,7 +19,8 @@ from langchain_community.utilities import WikipediaAPIWrapper
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-from tools import deepseek_chat, browser_tool
+from tools import browser_tool
+from google.adk.tools import google_search
 
 # Load environment variables from .env file in the app directory
 env_path = Path(__file__).parent / ".env"
@@ -32,8 +33,8 @@ else:
     did_load = load_dotenv(dotenv_path=env_path)
     print(f"Loaded .env successfully? {did_load}")
 
-cloud_logging_client = google.cloud.logging.Client()
-cloud_logging_client.setup_logging()
+# cloud_logging_client = google.cloud.logging.Client()
+# cloud_logging_client.setup_logging()
 
 # Get the directory where main.py is located
 AGENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -113,7 +114,6 @@ root_cause_analyzer = Agent(
     CRITICAL_FEEDBACK:
     { CRITICAL_FEEDBACK? }
 
-
     """,
     generate_content_config=types.GenerateContentConfig(
         temperature=0,
@@ -122,7 +122,8 @@ root_cause_analyzer = Agent(
 )
 
 # researcher agent
-researcher = Agent(
+
+researcher = LlmAgent(
     name="researcher",
     model=model_name,
     description="Conducts research to gather information about incidents and errors.",
@@ -148,16 +149,31 @@ researcher = Agent(
     INSTRUCTIONS:
     - If there is CRITICAL_FEEDBACK, use those thoughts to improve upon your research.
     - If there's a HTTP_LINK provided, use the browser tool to load the page and analyze its content to gather information about the error.
-    - Review the error details and HTTP link provided. If you have not seen this issue before, use the browser tool and google the error message using google_search tool to find relevant information about the error and its potential root cause. Use the browser tool to load the HTTP link provided and analyze its content for clues about the error.
+    - Review the error details and HTTP link provided. If you have not seen this issue before, use the browser tool and google the error message to find relevant information about the error and its potential root cause. Use the browser tool to load the HTTP link provided and analyze its content for clues about the error.
      You are an SRE expert and use the links available or feature of the observability tool to find out the root cause of the issue. Gather as much information as possible about the error and its potential root cause using browser_tool and add it to the state field 'research' using the 'append_to_state' tool.
     """,
     generate_content_config=types.GenerateContentConfig(
         temperature=0,
     ),
     tools=[
-        browser_tool,google_search, append_to_state,
+        google_search
     ],
+    output_key="research_findings",
 )
+
+# researcher_tool = AgentTool(agent=researcher)
+# root_cause_analyzer_tool = AgentTool(agent=root_cause_analyzer)
+# root_analysis_writer_tool = AgentTool(agent=root_analysis_writer)
+
+# incident_analysis_team = SequentialAgent(
+#     name="incident_analysis_team",
+#     description="Analyze incident details, gather relevant information, provide analysis and reports on recommendations for what might have contributed to this incident here with highest precision possible. If you are not sure, you can ask deepseek_chat (another model agent) to provide you with more information and insights about the issue.",
+#     sub_agents=[
+#         researcher,
+#         root_cause_analyzer,
+#         root_analysis_writer
+#     ],
+# )
 
 incident_analysis_team = SequentialAgent(
     name="incident_analysis_team",
@@ -169,7 +185,7 @@ incident_analysis_team = SequentialAgent(
     ],
 )
 
-root_agent = Agent(
+root_agent = LlmAgent(
     name="problem_gathering_agent",
     model=model_name,
     description="Assist user in finding out issue related to an incident",
@@ -182,6 +198,6 @@ root_agent = Agent(
     generate_content_config=types.GenerateContentConfig(
         temperature=0,
     ),
-    tools=[append_to_state],
+    tools=[append_to_state, browser_tool],
     sub_agents=[incident_analysis_team],
 )
