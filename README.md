@@ -39,3 +39,6 @@ Please ensure you have your .env inside workflow_agents folder.
 --------------------------------------------------------------------------------------------------
 To run the main program 
 python main.py
+
+
+<img width="1765" height="836" alt="image" src="https://github.com/user-attachments/assets/358b212b-97c5-40eb-aee3-13104aab0df5" />
